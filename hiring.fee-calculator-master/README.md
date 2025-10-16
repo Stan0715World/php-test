@@ -135,3 +135,11 @@ risk failing your test.
 Please **DO NOT** make a public repository for your solution as **we will instantly fail you**. Instead, when you are
 done working with your solution, simply run the `bin/submit` script provided. This will pack your solution into a
 tarball that you must send to us. You risk failing your test if you send your solution in a different way.
+
+## Solution Overview
+
+The provided implementation keeps the CLI entrypoint (`bin/calculate-fee`) lightweight by delegating the business rules
+to a reusable application service. A configuration-backed fee structure exposes ordered breakpoint series for 12- and
+24-month terms, with rational arithmetic used to interpolate fees for loan amounts that fall between configured
+breakpoints. The resulting fee is rounded so that the combined loan and fee total is divisible by five pounds before
+the value is formatted with two decimal places and thousands separators.
