@@ -1,12 +1,53 @@
 #!/usr/bin/env php
 <?php
 
-require_once dirname(__DIR__).'/vendor/autoload.php';
+$autoloadPath = dirname(__DIR__) . '/vendor/autoload.php';
 
-/**
- * Please note that you CAN modify this file in any way to suit your needs, but be advised that it MUST conform to
- * the contract specified in the README of the test.
- */
+if (file_exists($autoloadPath)) {
+    require_once $autoloadPath;
+} else {
+    spl_autoload_register(static function (string $class): void {
+        $prefix = 'Lendable\\Interview\\';
+
+        if (str_starts_with($class, $prefix)) {
+            $relative = substr($class, strlen($prefix));
+            $file = dirname(__DIR__) . '/src/' . str_replace('\\', '/', $relative) . '.php';
+
+            if (file_exists($file)) {
+                require_once $file;
+            }
+        }
+    });
+}
+
+use Lendable\Interview\Application\LoanFeeCalculator;
+use Lendable\Interview\Application\Rounding\NearestFivePoundsRoundingPolicy;
+use Lendable\Interview\Domain\Fee\ConfigurationFeeStructure;
+use Lendable\Interview\Domain\Loan\LoanAmount;
+use Lendable\Interview\Domain\Loan\LoanTerm;
 
 $amountString = $argv[1] ?? '';
 $termString = $argv[2] ?? '';
+
+if ($amountString === '' || $termString === '') {
+    fwrite(STDERR, "Usage: bin/calculate-fee <amount> <term>\n");
+    exit(1);
+}
+
+try {
+    $amount = LoanAmount::fromString($amountString);
+    $term = LoanTerm::fromString($termString);
+
+    $calculator = new LoanFeeCalculator(
+        ConfigurationFeeStructure::withDefaults(),
+        new NearestFivePoundsRoundingPolicy()
+    );
+
+    $fee = $calculator->calculate($amount, $term);
+
+    fwrite(STDOUT, $fee->format() . PHP_EOL);
+    exit(0);
+} catch (Throwable $exception) {
+    fwrite(STDERR, $exception->getMessage() . PHP_EOL);
+    exit(1);
+}
